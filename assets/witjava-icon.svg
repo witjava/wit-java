@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- WASM-hexagon violet -->
+    <linearGradient id="hex" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8B7bff"/>
+      <stop offset="1" stop-color="#5A3FE8"/>
+    </linearGradient>
+    <!-- Java cup heat: orange → red -->
+    <linearGradient id="cupL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFB25A"/>
+      <stop offset="1" stop-color="#F07A1F"/>
+    </linearGradient>
+    <linearGradient id="cupR" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0703A"/>
+      <stop offset="1" stop-color="#C9302C"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#6A4DFF" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#6A4DFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- app-icon plate -->
+  <rect x="0" y="0" width="1024" height="1024" rx="224" fill="#0E0B1A"/>
+  <rect x="0" y="0" width="1024" height="1024" rx="224" fill="url(#glow)" transform="translate(0 26) scale(1 0.9)"/>
+
+  <!-- component-model hexagon, pointy-top -->
+  <polygon
+    points="512,132 841,322 841,702 512,892 183,702 183,322"
+    fill="none" stroke="url(#hex)" stroke-width="26" stroke-linejoin="round"/>
+  <polygon
+    points="512,132 841,322 841,702 512,892 183,702 183,322"
+    fill="none" stroke="#C9B8FF" stroke-opacity="0.10" stroke-width="64" stroke-linejoin="round"/>
+
+  <!-- steam as bracket glyphs ‹ · ›, cup group nudged left to optically
+       center the mass against the handle -->
+  <g transform="translate(-12 0)">
+    <g fill="none" stroke="#D9CFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" opacity="0.92">
+      <polyline points="446,432 404,376 446,320"/>
+      <polyline points="578,432 620,376 578,320"/>
+      <line x1="512" y1="322" x2="512" y2="418"/>
+    </g>
+
+    <!-- angular coffee cup: two facets -->
+    <polygon points="368,492 512,492 512,736 424,736" fill="url(#cupL)"/>
+    <polygon points="512,492 656,492 600,736 512,736" fill="url(#cupR)"/>
+    <rect x="368" y="492" width="288" height="26" fill="#FFD9A0" opacity="0.85"/>
+    <!-- handle (attachment dropped below the rim band) -->
+    <path d="M 656 542 C 748 542 748 672 628 668"
+          fill="none" stroke="#F07A1F" stroke-width="38" stroke-linecap="round"/>
+  </g>
+</svg>
