@@ -181,9 +181,18 @@ pub fn is_positive(name: &str) -> bool {
     cases_dir().join(name).join("expected").exists()
 }
 
-/// Fresh unique temp dir.
+/// Fresh unique temp dir. The per-call counter keeps parallel tests that
+/// share a tag from racing on the same directory (one test's
+/// `remove_dir_all` would delete another's files mid-run).
 pub fn temp_dir(tag: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("wit-java-test-{}-{}", tag, std::process::id()));
+    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!(
+        "wit-java-test-{}-{}-{}",
+        tag,
+        std::process::id(),
+        n
+    ));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir
