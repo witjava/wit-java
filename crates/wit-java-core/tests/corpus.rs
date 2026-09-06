@@ -1,4 +1,4 @@
-//! Real-world corpus verification (spec §14.2, phase D9): generate all
+//! Real-world corpus verification (DESIGN §14.2, phase D9): generate all
 //! vendored WASI packages, then verify with `javac --release 17
 //! -Xlint:all -Werror` and `javadoc -Xdoclint:all,-missing` (zero warnings).
 //!
@@ -11,6 +11,7 @@ mod support;
 use std::path::PathBuf;
 use std::process::Command;
 use support::*;
+use wit_java_core::config::{OptionStyle, U64Style};
 use wit_java_core::GenerateOptions;
 
 fn corpus_dirs() -> Vec<PathBuf> {
@@ -106,4 +107,47 @@ fn list_java_files(root: &std::path::Path) -> Vec<PathBuf> {
     walk(root, &mut out);
     out.sort();
     out
+}
+
+/// Non-default styles must yield compilable output too: under
+/// `--option-style=nullable` every `@Nullable` needs a resolvable import of
+/// the support annotation (regression test), and `--u64=BigInteger` swaps
+/// the `u64` representation. `wasi-sockets` exercises both `option<T>` in
+/// non-return positions and `u64`.
+#[test]
+fn nullable_and_biginteger_styles_compile() {
+    let Some(javac) = java17() else {
+        eprintln!("SKIP: no JDK 17 available (set WIT_JAVA17_HOME)");
+        return;
+    };
+    let dir = corpus_dirs()
+        .into_iter()
+        .find(|d| d.file_name().is_some_and(|n| n == "wasi-sockets"))
+        .expect("wasi-sockets corpus");
+    for (option_style, u64_style, tag) in [
+        (OptionStyle::Nullable, U64Style::Long, "nullable"),
+        (OptionStyle::Optional, U64Style::BigInteger, "biginteger"),
+    ] {
+        let opts = GenerateOptions {
+            option_style,
+            u64_style,
+            ..Default::default()
+        };
+        let files =
+            wit_java_core::generate(&dir, &opts).unwrap_or_else(|e| panic!("generate {tag}: {e}"));
+        let out = temp_dir(&format!("corpus-{tag}"));
+        write(&files, &out);
+        let res = Command::new(&javac)
+            .args(["--release", "17", "-Xlint:all", "-Werror"])
+            .arg("-d")
+            .arg(temp_dir(&format!("corpus-{tag}-classes")))
+            .args(list_java_files(&out))
+            .output()
+            .expect("run javac");
+        assert!(
+            res.status.success(),
+            "javac ({tag}) failed:\n{}",
+            String::from_utf8_lossy(&res.stderr)
+        );
+    }
 }

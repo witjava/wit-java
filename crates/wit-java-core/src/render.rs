@@ -96,7 +96,11 @@ impl<'a> Renderer<'a> {
         match ty {
             TypeRef::Simple(s) => (*s).to_string(),
             TypeRef::Array(inner) => format!("{}[]", self.ty(inner)),
-            TypeRef::Nullable(inner) => format!("@Nullable {}", self.ty(inner)),
+            // the annotation FQN goes through the import plan like any other
+            // reference, so `@Nullable` resolves even when qualified
+            TypeRef::Nullable { annotation, inner } => {
+                format!("@{} {}", self.fqn(annotation), self.ty(inner))
+            }
             TypeRef::Generic { fqn, args } => {
                 let base = self.fqn(fqn);
                 let rendered: Vec<String> = args.iter().map(|a| self.ty(a)).collect();

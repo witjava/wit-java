@@ -2,6 +2,8 @@
 
 package demo.opt.v0_1.types;
 
+import io.github.witjava.support.Nullable;
+
 /** WIT interface. */
 public interface Types {
 

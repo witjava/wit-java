@@ -1,0 +1,3 @@
+name = "empty-interface"
+description = "an interface with no members still emits its declaration file (spec sections 2 and 6), whether a world references it or not"
+options = ["--no-support"]

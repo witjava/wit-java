@@ -6,8 +6,7 @@ use crate::naming::Fqn;
 #[derive(Debug, Clone)]
 pub enum TypeRef {
     /// A primitive or `java.lang` type rendered as a simple name
-    /// (`int`, `long`, `String`, `BigInteger`-qualified? no — BigInteger is
-    /// `Fqn`). Never imported.
+    /// (`int`, `long`, `String`). Never imported.
     Simple(&'static str),
     /// `byte[]`-style arrays.
     Array(Box<TypeRef>),
@@ -15,8 +14,13 @@ pub enum TypeRef {
     Generic { fqn: Fqn, args: Vec<TypeRef> },
     /// A plain qualified reference.
     Fqn(Fqn),
-    /// `@Nullable T` (nullable option style).
-    Nullable(Box<TypeRef>),
+    /// `@Nullable T` (nullable option style). Carries the support
+    /// `Nullable` annotation FQN so the import pass can import it — without
+    /// the import the rendered annotation does not resolve.
+    Nullable {
+        annotation: Fqn,
+        inner: Box<TypeRef>,
+    },
 }
 
 impl TypeRef {
@@ -24,7 +28,7 @@ impl TypeRef {
     pub fn visit_fqns<'a>(&'a self, out: &mut Vec<&'a Fqn>) {
         match self {
             TypeRef::Simple(_) => {}
-            TypeRef::Array(inner) | TypeRef::Nullable(inner) => inner.visit_fqns(out),
+            TypeRef::Array(inner) => inner.visit_fqns(out),
             TypeRef::Generic { fqn, args } => {
                 out.push(fqn);
                 for a in args {
@@ -32,6 +36,10 @@ impl TypeRef {
                 }
             }
             TypeRef::Fqn(fqn) => out.push(fqn),
+            TypeRef::Nullable { annotation, inner } => {
+                out.push(annotation);
+                inner.visit_fqns(out);
+            }
         }
     }
 }

@@ -17,6 +17,15 @@
 >   WJ 码；conformance 21 case（14 正 + 7 负）；`wasi-cli-0.3-rc` 实为
 >   upstream v0.2.7 快照，已改名 `wasi-cli-0.2.7` 并修正 VERSIONS.md；
 >   javadoc 验收加 `-Werror`；CI latest-JDK 步骤不再吞错误。
+> - ✅ 二轮加固（2026-09-06）：修复 `--option-style=nullable` 生成的
+>   `@Nullable` 缺 import（javac 直接 cannot find symbol；新增 nullable +
+>   BigInteger 风格的 corpus 编译回归测试）；修复空 interface（无类型无函数，
+>   或全部被 feature gate 过滤）被静默丢弃而 world accessor 仍引用它
+>   （spec §2/§6 本就要求恒发；新增 `empty-interface` conformance case，
+>   现 22 case：15 正 + 7 负）；interface FQN 内部不变量失败改为报诊断
+>   而非静默跳过 world 聚合；源码注释中误标为 "spec §" 的 DESIGN 节号
+>   已更正；DESIGN §11.3 补 Q1 决议注（support FQN 定为
+>   `io.github.witjava.support`）。
 > - 剩余发布动作：crates.io `0.0.0` 占位 → Sonatype `io.github.witjava` 验证
 >   （发 1.0 前 repo 需转 public）→ mapping 仓打 `mapping/v1` tag → wit-java 发 1.0
 > - 实现期写回 spec 的规则：泛型装箱（§5.1.1）、interface 声明恒发（§6）、

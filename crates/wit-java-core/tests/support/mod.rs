@@ -41,8 +41,8 @@ pub fn java_path() -> Option<PathBuf> {
     }
 }
 
-/// A JDK 17 toolchain for `javac`/`javadoc` verification (spec §14: 17 is
-/// the baseline). Resolution order: `WIT_JAVA17_HOME`, `~/.local/jdks/jdk-17*`,
+/// A JDK 17 toolchain for `javac`/`javadoc` verification (DESIGN §14: 17 is
+/// the verification baseline). Resolution order: `WIT_JAVA17_HOME`, `~/.local/jdks/jdk-17*`,
 /// `JAVA_HOME`, system PATH.
 pub fn java17() -> Option<PathBuf> {
     if let Some(home) = std::env::var_os("WIT_JAVA17_HOME") {

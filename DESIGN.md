@@ -578,6 +578,11 @@ support pkg io.github.<gh-user>.wit.java.support
 
 `--support-package` 的默认值即上述 support pkg。
 
+**（2026-09-06 已定，见 TODO §1.1 Q1）：GitHub org `witjava` 已建，两仓库
+置于其下；support package 默认 FQN 与 Maven groupId 就此锁定为
+`io.github.witjava(.support)`。org 可整体转让，将来移交 BA 不再构成
+mapping breaking change，下文「迁到真域名」的选项保留但不再必需。**
+
 迁移路径：项目确实活下来、或进入 BA 之后，再迁到真域名或 `org.bytecodealliance`。
 **但 support package 的 FQN 变更是 mapping breaking change**（§5.8），
 因此这个决定最迟必须在 M4 冻结 mapping v1 之前定死，不能拖到 1.0 之后。

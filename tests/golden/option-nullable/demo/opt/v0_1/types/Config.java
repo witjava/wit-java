@@ -2,6 +2,8 @@
 
 package demo.opt.v0_1.types;
 
+import io.github.witjava.support.Nullable;
+
 /** WIT-generated record. */
 public record Config(@Nullable String name, @Nullable Long retries) {
 }

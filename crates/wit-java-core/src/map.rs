@@ -1,5 +1,7 @@
 //! The mapper: WIT resolve → Java declaration IR, implementing the mapping
-//! spec. All collisions funnel through a single FQN registry (spec §5.10).
+//! spec. All collisions funnel through a single FQN registry (DESIGN §5.10;
+//! the conditions map onto WJ0004/WJ0005/WJ0007 in the spec's error-code
+//! registry).
 
 use crate::config::{GenerateOptions, InterfaceStyle, OptionStyle, Role, U64Style};
 use crate::diagnostic::{Code, Diagnostic, Diagnostics, Location};
@@ -39,8 +41,20 @@ enum RegisteredKind {
     Interface,
 }
 
+impl RegisteredKind {
+    fn describe(&self) -> &'static str {
+        match self {
+            RegisteredKind::Resource => "resource",
+            RegisteredKind::Record => "record",
+            RegisteredKind::Variant => "variant",
+            RegisteredKind::Enum => "enum",
+            RegisteredKind::Flags => "flags",
+            RegisteredKind::Interface => "interface",
+        }
+    }
+}
+
 struct RegistryEntry {
-    #[allow(dead_code)]
     kind: RegisteredKind,
     /// WIT package identity, for WJ0004-vs-WJ0007 classification.
     wit_pkg: String,
@@ -201,7 +215,8 @@ impl<'a> Mapper<'a> {
             let mut d = Diagnostic::new(
                 code,
                 format!(
-                    "`{desc}` maps to Java type `{fqn}`, already claimed by `{}`",
+                    "`{desc}` maps to Java type `{fqn}`, already claimed by {} `{}`",
+                    existing.kind.describe(),
                     existing.desc
                 ),
             );
@@ -374,10 +389,10 @@ impl<'a> Mapper<'a> {
             }
         }
 
-        if decls.is_empty() && iface_methods.is_empty() {
-            return;
-        }
-
+        // No early return when the interface is empty (no types, no
+        // functions, or everything filtered by feature gates): spec §2/§6
+        // require the declaration file anyway — world accessors return the
+        // interface type, so dropping it would emit an unresolvable import.
         let doc = render_doc(&iface.docs);
         let javadoc = if doc.is_empty() {
             vec!["WIT interface.".to_string()]
@@ -404,8 +419,8 @@ impl<'a> Mapper<'a> {
                 .push(ir::JavaFile::types_file(base.clone(), fname, d));
         }
         // Always emit the interface declaration: world accessors return the
-        // interface type even when the interface has no functions of its own
-        // (spec §6).
+        // interface type even when the interface declares nothing of its own
+        // (spec §2, §6).
         self.files
             .push(ir::JavaFile::types_file(base.clone(), simple, iface_decl));
         self.package_infos.entry(base.clone()).or_insert_with(|| {
@@ -994,11 +1009,25 @@ impl<'a> Mapper<'a> {
     fn interface_fqn(&mut self, iface_id: wit_parser::InterfaceId) -> Result<Fqn, ()> {
         let resolve = self.resolve;
         let iface = &resolve.interfaces[iface_id];
+        // Both failures below are internal invariants (named interfaces
+        // always belong to a package). They MUST push a diagnostic: a silent
+        // `Err` would drop the world aggregates with no error at all and
+        // `generate` would report success with missing output.
         let Some(name) = &iface.name else {
-            return Err(());
+            return self.fail(
+                iface.span,
+                Code::FqnCollision,
+                format!(
+                    "internal: interface #{iface_id:?} has no name but a named one was expected"
+                ),
+            );
         };
         let Some(pkg_id) = iface.package else {
-            return Err(());
+            return self.fail(
+                iface.span,
+                Code::FqnCollision,
+                format!("internal: interface `{name}` has no owning package"),
+            );
         };
         let pkg_java = self.java_pkg(pkg_id);
         let base = self.interface_base(pkg_java, name);
@@ -1082,9 +1111,12 @@ impl<'a> Mapper<'a> {
                                     "nested `option` under --option-style=nullable",
                                 );
                             }
-                            return self
-                                .resolve_type_in(inner, true, Pos::Other)
-                                .map(|t| ir::TypeRef::Nullable(Box::new(boxed(t))));
+                            return self.resolve_type_in(inner, true, Pos::Other).map(|t| {
+                                ir::TypeRef::Nullable {
+                                    annotation: self.support_fqn("Nullable"),
+                                    inner: Box::new(boxed(t)),
+                                }
+                            });
                         }
                         // optional style — and returns under nullable style —
                         // map to Optional (spec §5.4); inner args use the
@@ -1307,7 +1339,7 @@ fn leaf_name(name: &str) -> &str {
 }
 
 /// Java generics need reference types: box primitive mappings when they
-/// appear as generic type arguments (spec §5, boxing rule).
+/// appear as generic type arguments (spec §5.1.1).
 fn boxed(ty: ir::TypeRef) -> ir::TypeRef {
     match ty {
         ir::TypeRef::Simple("boolean") => ir::TypeRef::Simple("Boolean"),
@@ -1317,7 +1349,10 @@ fn boxed(ty: ir::TypeRef) -> ir::TypeRef {
         ir::TypeRef::Simple("long") => ir::TypeRef::Simple("Long"),
         ir::TypeRef::Simple("float") => ir::TypeRef::Simple("Float"),
         ir::TypeRef::Simple("double") => ir::TypeRef::Simple("Double"),
-        ir::TypeRef::Nullable(inner) => ir::TypeRef::Nullable(Box::new(boxed(*inner))),
+        ir::TypeRef::Nullable { annotation, inner } => ir::TypeRef::Nullable {
+            annotation,
+            inner: Box::new(boxed(*inner)),
+        },
         other => other,
     }
 }

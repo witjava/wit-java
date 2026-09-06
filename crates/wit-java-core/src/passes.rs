@@ -1,5 +1,6 @@
-//! Import resolve pass (spec §8/§12: same simple name in one file → import
-//! the lexicographically-first FQN, fully qualify the rest).
+//! Import resolve pass (DESIGN §8; spec §12 fixes import order for
+//! determinism): same simple name in one file → import the
+//! lexicographically-first FQN, fully qualify the rest.
 
 use crate::ir::{Decl, JavaFile, Method, TypeRef};
 use crate::naming::Fqn;

@@ -1,0 +1,11 @@
+package demo:empty@0.1.0;
+
+interface used {
+}
+
+interface orphan {
+}
+
+world app {
+    import used;
+}
