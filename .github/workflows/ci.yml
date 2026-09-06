@@ -18,8 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+      # components go into the toolchain selected by rust-toolchain.toml
+      - run: rustup component add rustfmt clippy
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
