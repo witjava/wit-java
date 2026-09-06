@@ -20,7 +20,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      - uses: setup-java/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
@@ -30,7 +30,7 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
       # forward-looking doclint on the newest JDK; not a gate
-      - uses: setup-java/setup-java@v4
+      - uses: actions/setup-java@v4
         if: matrix.os == 'ubuntu-latest'
         with:
           distribution: temurin

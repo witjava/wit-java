@@ -7,9 +7,11 @@
 >   + determinism + WASI corpus(0.2.8 ×5 + 0.3.0-rc，合并 177 文件过
 >   `javac 17 -Werror` 与 doclint 零警告) + naming 单测 + CI(workflows 就绪)
 >   —— `cargo test --workspace` 13/13，clippy 零警告，fmt 干净
-> - ✅ E-ready：冻结的机器可验条件全部满足；剩余全部是**用户发布动作**：
->   git commit（两仓均未提交）→ 建 `witjava` org → push → crates.io 0.0.0 占位
->   → Sonatype 验证 → mapping 仓打 `mapping/v1` tag → wit-java 发 1.0
+> - ✅ E-ready：冻结的机器可验条件全部满足。
+> - ✅ 已发布（2026-09-06，private）：`witjava/wit-java`（b5a7e3b）与
+>   `witjava/wit-java-mapping`（fb8cb4f）已推送，main 分支，CI 已自动触发。
+> - 剩余发布动作：crates.io `0.0.0` 占位 → Sonatype `io.github.witjava` 验证
+>   （发 1.0 前 repo 需转 public）→ mapping 仓打 `mapping/v1` tag → wit-java 发 1.0
 > - 实现期写回 spec 的规则：泛型装箱（§5.1.1）、interface 声明恒发（§6）、
 >   package-info 注解 FQN 形式（§9）、map rationale 修正（§5.12）
 
