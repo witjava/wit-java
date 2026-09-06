@@ -1,0 +1,3 @@
+name = "unsupported-map"
+description = "map<K,V> rejected (byte[] key equality would be silently wrong)"
+options = ["--no-support"]

@@ -1,0 +1,3 @@
+name = "list-bytes"
+description = "list<u8> -> byte[] in field, nested list, option and result positions"
+options = ["--no-support"]

@@ -1,0 +1,3 @@
+name = "result"
+description = "All four result shapes incl. Unit for absent sides"
+options = ["--no-support"]

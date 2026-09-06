@@ -1,0 +1,8 @@
+package demo:dep@0.1.0;
+
+interface api {
+    /// Something useful.
+    record payload {
+        value: u32,
+    }
+}

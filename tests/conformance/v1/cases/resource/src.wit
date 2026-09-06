@@ -1,0 +1,17 @@
+package demo:store@0.1.0;
+
+interface store {
+    /// A widget.
+    resource widget {
+        /// Make one.
+        constructor(label: string);
+        /// The label.
+        label: func() -> string;
+        /// Repaint it.
+        repaint: func();
+        /// Trade for a fresh one.
+        swap: func(other: borrow<widget>) -> own<widget>;
+        /// Two from one.
+        duplicate: static func(w: borrow<widget>) -> own<widget>;
+    }
+}

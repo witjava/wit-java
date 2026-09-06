@@ -1,0 +1,3 @@
+name = "package-collision"
+description = "--package-map merges two WIT packages into one Java package; same-named item collides"
+options = ["--no-support", "--package-map=packages.toml"]

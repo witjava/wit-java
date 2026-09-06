@@ -1,0 +1,14 @@
+package demo:bytes@0.1.0;
+
+interface types {
+    /// A byte blob.
+    record blob {
+        data: list<u8>,
+    }
+    /// Read every chunk.
+    read-all: func() -> list<list<u8>>;
+    /// Data if any.
+    maybe-data: func() -> option<list<u8>>;
+    /// First non-empty chunk.
+    first-of: func(chunks: list<list<u8>>) -> result<list<u8>, string>;
+}

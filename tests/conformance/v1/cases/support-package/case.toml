@@ -1,0 +1,3 @@
+name = "support-package"
+description = "default support FQN io.github.witjava.support, full support tree emitted (no --no-support)"
+options = []

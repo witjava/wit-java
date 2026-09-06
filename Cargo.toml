@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = ["crates/wit-java-core", "crates/wit-java-cli"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.85"
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+repository = "https://github.com/witjava/wit-java"
+
+[workspace.dependencies]
+wit-parser = "0.258"
+thiserror = "2"
+camino = "1"
+toml = "0.9"
+clap = { version = "4", features = ["derive"] }
+semver = "1"
+indexmap = "2"
+anyhow = "1"
+wit-java-core = { path = "crates/wit-java-core" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "warn"

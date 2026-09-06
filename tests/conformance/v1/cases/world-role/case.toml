@@ -1,0 +1,3 @@
+name = "world-role"
+description = "world aggregates: role segment always present, accessor + inline funcs, both roles"
+options = ["--no-support"]

@@ -1,0 +1,3 @@
+name = "nested-option-nullable"
+description = "nested option under --option-style=nullable is rejected, not guessed"
+options = ["--no-support", "--option-style=nullable"]

@@ -1,0 +1,3 @@
+name = "resource"
+description = "resource -> interface extends AutoCloseable, Factory/Statics nested interfaces, close() narrowed"
+options = ["--no-support"]

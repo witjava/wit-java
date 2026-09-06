@@ -1,0 +1,12 @@
+package demo:app@0.2.0;
+
+interface logging {
+    /// Write a line.
+    log: func(msg: string);
+}
+
+world machine {
+    import logging;
+    import ping: func() -> s32;
+    export start: func();
+}

@@ -1,0 +1,3 @@
+name = "mangling"
+description = "keyword and Object-method mangles: class_, wait_, toString_, hashCode_, equals_"
+options = ["--no-support"]

@@ -1,0 +1,9 @@
+package demo:opt@0.1.0;
+
+interface types {
+    record config {
+        name: option<string>,
+        retries: option<option<u32>>,
+    }
+    probe: func(depth: option<u16>) -> option<u64>;
+}

@@ -1,0 +1,3 @@
+name = "alias"
+description = "type alias erased (kilobytes -> long), cross-package use resolves to foreign type"
+options = ["--no-support"]

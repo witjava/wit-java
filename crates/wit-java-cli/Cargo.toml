@@ -1,0 +1,19 @@
+[package]
+name = "wit-java-cli"
+description = "CLI front-end for wit-java (binary: wit-java)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "wit-java"
+path = "src/main.rs"
+
+[dependencies]
+wit-java-core.workspace = true
+clap.workspace = true
+
+[lints]
+workspace = true

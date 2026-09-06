@@ -1,0 +1,13 @@
+package demo:neg5@0.1.0;
+
+interface one {
+    record shared {
+        a: u8,
+    }
+}
+
+interface two {
+    record shared {
+        b: u8,
+    }
+}

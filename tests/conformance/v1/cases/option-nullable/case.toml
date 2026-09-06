@@ -1,0 +1,3 @@
+name = "option-nullable"
+description = "--option-style=nullable: bare T + @Nullable in non-return positions, Optional in returns"
+options = ["--no-support", "--option-style=nullable"]

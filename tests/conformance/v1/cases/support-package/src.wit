@@ -1,0 +1,5 @@
+package demo:sp@0.1.0;
+
+interface types {
+    flip: func(coin: bool) -> result<string, string>;
+}

@@ -1,0 +1,3 @@
+name = "tuple-arity"
+description = "tuple with 9 components exceeds Tuple8"
+options = ["--no-support"]

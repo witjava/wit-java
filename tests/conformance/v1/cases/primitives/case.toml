@@ -1,0 +1,3 @@
+name = "primitives"
+description = "All 13 WIT primitives map to Java primitives/strings; u64 and char semantics"
+options = ["--no-support"]

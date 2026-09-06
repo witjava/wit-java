@@ -1,0 +1,11 @@
+package demo:mang@0.1.0;
+
+interface mangled {
+    class: func();
+    wait: func() -> u8;
+    record pair {
+        to-string: string,
+        hash-code: u32,
+        equals: bool,
+    }
+}

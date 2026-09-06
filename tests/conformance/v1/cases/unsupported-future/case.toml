@@ -1,0 +1,3 @@
+name = "unsupported-future"
+description = "future<T> rejected in mapping v1"
+options = ["--no-support"]

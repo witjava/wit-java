@@ -1,0 +1,3 @@
+name = "flags-arity"
+description = "flags with 65 members exceed 64 bits"
+options = ["--no-support"]

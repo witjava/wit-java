@@ -1,0 +1,5 @@
+package demo:neg1@0.1.0;
+
+interface types {
+    later: func() -> future<u8>;
+}

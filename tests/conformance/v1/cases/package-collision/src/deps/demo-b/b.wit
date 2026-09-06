@@ -1,0 +1,7 @@
+package demo:b@0.1.0;
+
+interface api {
+    record clash {
+        x: u8,
+    }
+}

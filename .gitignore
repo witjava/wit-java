@@ -1,0 +1,5 @@
+/target
+.localonly/
+*.class
+out/
+.DS_Store

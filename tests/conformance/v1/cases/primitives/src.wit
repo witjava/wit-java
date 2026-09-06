@@ -1,0 +1,20 @@
+package demo:prim@0.1.0;
+
+interface types {
+    /// A record with all WIT primitive types.
+    record all-prims {
+        a: bool,
+        b: s8,
+        c: s16,
+        d: s32,
+        e: s64,
+        f: u8,
+        g: u16,
+        h: u32,
+        i: u64,
+        j: f32,
+        k: f64,
+        l: char,
+        m: string,
+    }
+}

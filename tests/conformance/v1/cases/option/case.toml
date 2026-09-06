@@ -1,0 +1,3 @@
+name = "option"
+description = "option<T> -> Optional<T> in every position, incl. nested option"
+options = ["--no-support"]

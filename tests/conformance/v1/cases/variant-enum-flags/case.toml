@@ -1,0 +1,3 @@
+name = "variant-enum-flags"
+description = "sealed interface + nested records, enum UPPER_SNAKE, flags record with or/and/contains/empty"
+options = ["--no-support"]

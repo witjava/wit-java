@@ -1,0 +1,9 @@
+package demo:res@0.1.0;
+
+interface types {
+    parse: func() -> result<u32, string>;
+    load: func() -> result<string>;
+    fail-only: func() -> result<_, string>;
+    nothing: func();
+    attempt: func() -> result;
+}

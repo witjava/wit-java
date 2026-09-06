@@ -1,0 +1,7 @@
+package demo:a@0.1.0;
+
+interface api {
+    record clash {
+        y: u16,
+    }
+}

@@ -1,0 +1,5 @@
+package demo:neg2@0.1.0;
+
+interface types {
+    index: func() -> map<string, u32>;
+}
