@@ -4,6 +4,21 @@
 
 ### Fixed
 
+- Java keywords as WIT interface names (`interface class`, `interface
+  default`) are now mangled in the nested-style interface package segment
+  (`…v0_1.class_`, spec §3.1/§3.3). Previously the segment was derived
+  without keyword mangling, producing an invalid Java package declaration.
+  New conformance case `reserved-interface-segment` pins the mangled
+  segments and accessors.
+- `--world <name>` naming no world in the input is now a usage error
+  (exit 1, message lists the known worlds). Previously an unknown name was
+  silently ignored: nothing but the world-less interfaces was generated and
+  the run exited 0 (spec §2).
+- A run whose generated files would land in the support package itself
+  (e.g. `--package-map` onto the support FQN with flat interface style) is
+  now rejected as a usage error instead of silently overwriting a support
+  source — the shared `package-info.java` was the usual victim (spec §8).
+  Mapping into sub-packages of the support package remains allowed.
 - `--option-style=nullable` output is now compilable: every file using
   `@Nullable` imports the support annotation. Previously the annotation was
   emitted with no import, so `javac` failed with `cannot find symbol` — the
@@ -60,6 +75,9 @@
   package segments, empty interfaces, feature gates (`--features` enabled /
   default-skipped) and single-role generation (`--role guest` keeps the role
   segment). Golden trees re-blessed.
+- Conformance suite grown to 19 positive + 7 negative cases
+  (`reserved-interface-segment`: keywords as interface names mangle in the
+  nested-style package segment, spec §3.1/§3.3).
 - javadoc verification now runs with `-Werror` so any doclint warning fails
   the build.
 

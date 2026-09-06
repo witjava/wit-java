@@ -16,7 +16,7 @@ wasmtime-java) implements that layer against the generated declarations.
   repository; this crate is its reference implementation, not its definition.
 
 Status: pre-1.0. Implements the `wit-java-mapping` v1 draft end to end:
-the conformance suite (18 positive + 7 negative cases), byte-level golden
+the conformance suite (19 positive + 7 negative cases), byte-level golden
 tests, and the vendored WASI corpus (0.2.8 + a 0.2.7 snapshot) all pass, with
 `javac --release 17 -Xlint:all -Werror` and `javadoc -Xdoclint:all,-missing
 -Werror` clean. See `TODO.md` for what remains before the 1.0 freeze.

@@ -1,0 +1,17 @@
+package demo:seg@0.1.0;
+
+interface class {
+    record point {
+        x: s32,
+        y: s32,
+    }
+}
+
+interface default {
+    value: func() -> u32;
+}
+
+world w {
+    import class;
+    import default;
+}

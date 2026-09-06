@@ -73,6 +73,31 @@ pub fn generate(
         .map_err(|e| GenError::Input(anyhow::anyhow!("{e}")))?;
     let (resolve, _pkg_ids) =
         wit::load(wit_path, &opts.features, opts.all_features).map_err(GenError::Input)?;
+    // A --world name matching no world in the resolved input would silently
+    // generate nothing but the world-less interfaces; reject it as the usage
+    // error it is (spec §2).
+    if !opts.worlds.is_empty() {
+        let known: std::collections::HashSet<&str> = resolve
+            .worlds
+            .iter()
+            .map(|(_, w)| w.name.as_str())
+            .collect();
+        let unknown: Vec<&str> = opts
+            .worlds
+            .iter()
+            .map(|w| w.as_str())
+            .filter(|w| !known.contains(w))
+            .collect();
+        if !unknown.is_empty() {
+            let mut names: Vec<&str> = known.into_iter().collect();
+            names.sort_unstable();
+            return Err(GenError::Input(anyhow::anyhow!(
+                "unknown world(s): {} (input defines: {})",
+                unknown.join(", "),
+                names.join(", ")
+            )));
+        }
+    }
     let project = map::generate(&resolve, opts).map_err(GenError::Diagnostics)?;
     let rendered = render::render(&project, TOOL_VERSION, &opts.support_package)
         .map_err(|e| GenError::Internal(anyhow::anyhow!("{e}")))?;
@@ -86,6 +111,20 @@ pub fn generate(
         }
     }
     files.sort_by(|a, b| a.path.cmp(&b.path));
+    // render() already rejects duplicates within the mapped tree; this
+    // backstop catches the remaining overlap — generated files landing in
+    // the support package itself (spec §8), which would otherwise overwrite
+    // a support source silently (the shared package-info.java first).
+    for pair in files.windows(2) {
+        if pair[0].path == pair[1].path {
+            return Err(GenError::Input(anyhow::anyhow!(
+                "support package `{}` collides with a generated package (both write `{}`); \
+                 --package-map/--package-root must not map into the support package",
+                opts.support_package,
+                pair[1].path
+            )));
+        }
+    }
     Ok(files)
 }
 

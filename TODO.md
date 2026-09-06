@@ -30,6 +30,15 @@
 >   backstop（合法 WIT 无法触发，无负例）；spec §5.6 措辞修正；
 >   源码注释中误标为 "spec §" 的 DESIGN 节号已更正；DESIGN §11.3 补
 >   Q1 决议注（support FQN 定为 `io.github.witjava.support`）。
+> - ✅ 三轮加固（2026-09-06）：修复 interface 名为 Java 关键字时
+>   nested 段未 mangle（spec §3.1/§3.3，`interface class` 原会生成
+>   非法 package `…class`；新增 conformance case
+>   `reserved-interface-segment`，现 26 case：19 正 + 7 负）；
+>   `--world` 指向不存在的 world 由静默忽略改为 usage error（spec §2
+>   补规则）；生成文件落入 support package 本体由静默覆盖改为拒绝
+>   （spec §8 补规则，子 package 仍合法）；spec §7.3 措辞修正——
+>   `--role both` 下 host/guest 各用本 role 措辞（原文与 `world-role`
+>   conformance 数据矛盾）。
 > - 剩余发布动作：crates.io `0.0.0` 占位 → Sonatype `io.github.witjava` 验证
 >   （发 1.0 前 repo 需转 public）→ mapping 仓打 `mapping/v1` tag → wit-java 发 1.0
 > - 实现期写回 spec 的规则：泛型装箱（§5.1.1）、interface 声明恒发（§6）、

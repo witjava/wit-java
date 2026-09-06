@@ -358,7 +358,10 @@ impl<'a> Mapper<'a> {
 
     fn interface_base(&self, pkg_java: String, name: &str) -> String {
         match self.opts.interface_style {
-            InterfaceStyle::Nested => format!("{pkg_java}.{}", naming::to_lower_camel(name)),
+            // package_segment, not bare to_lower_camel: every derived
+            // package segment keyword-mangles (spec §3.1/§3.3), so an
+            // interface named `class` lands in a `class_` sub-package
+            InterfaceStyle::Nested => format!("{pkg_java}.{}", naming::package_segment(name)),
             InterfaceStyle::Flat => pkg_java,
         }
     }
