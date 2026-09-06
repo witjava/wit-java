@@ -4,28 +4,15 @@ package demo.bytes.v0_1.types;
 
 import io.github.witjava.support.Result;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Types {
 
-    /**
-     * Read every chunk.
-     *
-     * @return readAll
-     */
+    /** Read every chunk. */
     java.util.List<byte[]> readAll();
 
-    /**
-     * Data if any.
-     *
-     * @return maybeData
-     */
+    /** Data if any. */
     java.util.Optional<byte[]> maybeData();
 
-    /**
-     * First non-empty chunk.
-     *
-     * @param chunks chunks
-     * @return firstOf
-     */
+    /** First non-empty chunk. */
     Result<byte[], String> firstOf(java.util.List<byte[]> chunks);
 }

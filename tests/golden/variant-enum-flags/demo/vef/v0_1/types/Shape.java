@@ -5,11 +5,7 @@ package demo.vef.v0_1.types;
 /** A shape. */
 public sealed interface Shape permits Shape.Circle, Shape.Dot, Shape.Labeled {
 
-    /**
-     * A circle.
-     *
-     * @param value value
-     */
+    /** A circle. */
     public record Circle(double value) implements Shape {
     }
 
@@ -17,11 +13,7 @@ public sealed interface Shape permits Shape.Circle, Shape.Dot, Shape.Labeled {
     public record Dot() implements Shape {
     }
 
-    /**
-     * A labeled thing.
-     *
-     * @param value value
-     */
+    /** A labeled thing. */
     public record Labeled(java.util.Optional<String> value) implements Shape {
     }
 }

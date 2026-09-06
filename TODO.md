@@ -1,19 +1,27 @@
 # wit-java 实施计划
 
 > **进度**（2026-09-06，B→E 全程完成，暂停于发布动作前）：
-> - ✅ A 骨架 / B（spec 全文 + 人工验证 + conformance 18 case + Tier1 checker）
+> - ✅ A 骨架 / B（spec 全文 + 人工验证 + conformance + Tier1 checker）
 >   / C（M2 spike **通过**，spec §5.11 解除冻结阻塞）
-> - ✅ D 全部（D1–D10）：实现 + conformance 11/11 正例、7/7 负例 + golden(BLESS=1)
->   + determinism + WASI corpus(0.2.8 ×5 + 0.3.0-rc，合并 177 文件过
->   `javac 17 -Werror` 与 doclint 零警告) + naming 单测 + CI(workflows 就绪)
->   —— `cargo test --workspace` 13/13，clippy 零警告，fmt 干净
+> - ✅ D 全部（D1–D10）：实现 + conformance 正例/负例全绿 + golden(BLESS=1)
+>   + determinism + WASI corpus（合并过 `javac 17 -Werror` 与 doclint 零警告）
+>   + naming 单测 + CI(workflows 就绪)，clippy 零警告，fmt 干净
 > - ✅ E-ready：冻结的机器可验条件全部满足。
 > - ✅ 已发布（2026-09-06，private）：`witjava/wit-java`（b5a7e3b）与
 >   `witjava/wit-java-mapping`（fb8cb4f）已推送，main 分支，CI 已自动触发。
+> - ✅ 复审加固轮（2026-09-06，详见两仓 CHANGELOG [Unreleased]）：
+>   修复 inline world interface 整体被丢弃、interface 声明与同名成员类型
+>   静默覆盖（真实 WASI 的 error/network/terminal-* 触发，spec §6 补规则）、
+>   包/世界段保留字、`--package-map@x.y`、`--u64=BigInteger` 的 long 注、
+>   `close` 撞名、`*/` 注入；生成 Javadoc 不再造填充句；用法错误不再冒用
+>   WJ 码；conformance 21 case（14 正 + 7 负）；`wasi-cli-0.3-rc` 实为
+>   upstream v0.2.7 快照，已改名 `wasi-cli-0.2.7` 并修正 VERSIONS.md；
+>   javadoc 验收加 `-Werror`；CI latest-JDK 步骤不再吞错误。
 > - 剩余发布动作：crates.io `0.0.0` 占位 → Sonatype `io.github.witjava` 验证
 >   （发 1.0 前 repo 需转 public）→ mapping 仓打 `mapping/v1` tag → wit-java 发 1.0
 > - 实现期写回 spec 的规则：泛型装箱（§5.1.1）、interface 声明恒发（§6）、
->   package-info 注解 FQN 形式（§9）、map rationale 修正（§5.12）
+>   interface 声明 mangle（§6）、package-info 注解 FQN 形式（§9）、
+>   map rationale 修正（§5.12）、`*/` 转义与空行丢弃（§9）
 
 本文件是 `DESIGN.md` 的执行拆解。章节引用（§N）一律指 `DESIGN.md`。
 第 1 章「决策记录」是对 DESIGN.md 的**修订与补全**，冲突时以本章为准。

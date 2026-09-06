@@ -16,10 +16,10 @@ const U64_NOTE: &str = "Unsigned 64-bit integer, range 0..2^64-1, stored as a Ja
 const CHAR_NOTE: &str = "A Unicode scalar value (U+0000..U+10FFFF, excluding the surrogate range U+D800..U+DFFF), stored as a Java {@code int}.";
 const BORROW_NOTE: &str = "Borrowed handle: ownership is not transferred by this call.";
 const OWN_RETURN_NOTE: &str = "Owned handle: the caller is responsible for closing (dropping) it.";
+const NESTED_OWN_RETURN_NOTE: &str =
+    "The returned value contains owned handles: the caller is responsible for closing them.";
 const OWN_PARAM_NOTE: &str =
     "A parameter contains owned handles; closing them is the caller's decision.";
-// Spec §5.11 also defines a nested-owned *return* note; the current mapper
-// emits OWN_RETURN_NOTE for any owned return (nested or direct).
 
 /// Position of a type occurrence: return positions keep `Optional` even
 /// under the nullable style (spec §5.4).
@@ -67,6 +67,10 @@ struct Mapper<'a> {
     diags: Diagnostics,
     registry: HashMap<Fqn, RegistryEntry>,
     type_fqns: HashMap<TypeId, Fqn>,
+    /// Java simple name of each interface declaration (possibly mangled when
+    /// a member type takes the same name, e.g. `interface error { resource
+    /// error; }` in real WASI).
+    iface_decl_names: HashMap<wit_parser::InterfaceId, String>,
     pkg_java: HashMap<PackageId, String>,
     files: Vec<ir::JavaFile>,
     package_infos: HashMap<String, Vec<String>>,
@@ -80,6 +84,7 @@ impl<'a> Mapper<'a> {
             diags: Diagnostics::default(),
             registry: HashMap::new(),
             type_fqns: HashMap::new(),
+            iface_decl_names: HashMap::new(),
             pkg_java: HashMap::new(),
             files: Vec::new(),
             package_infos: HashMap::new(),
@@ -137,6 +142,45 @@ impl<'a> Mapper<'a> {
         );
         self.pkg_java.insert(pkg_id, java.clone());
         java
+    }
+
+    /// Resolves the Java simple name of an interface declaration against the
+    /// FQN registry (spec §4.3): appends `_` until free, WJ0005 when no name
+    /// can be found.
+    fn mangle_interface_decl(&mut self, package: String, simple: String) -> String {
+        let mut candidate = simple.clone();
+        for _ in 0..64 {
+            if !self
+                .registry
+                .contains_key(&Fqn::new(package.clone(), candidate.clone()))
+            {
+                return candidate;
+            }
+            candidate.push('_');
+        }
+        self.push_diag(Diagnostic::new(
+            Code::ManglingCollision,
+            format!("cannot find a free Java name for interface `{simple}` in `{package}`"),
+        ));
+        simple
+    }
+
+    /// Registers one world-local type (direct world item or inline world
+    /// interface member) under the world's package segment.
+    fn register_world_type(&mut self, world_pkg: &str, wit_pkg: &str, wname: &str, tid: TypeId) {
+        let td = &self.resolve.types[tid];
+        let Some(tdn) = &td.name else { return };
+        let Some(kind) = registered_kind(&td.kind) else {
+            return;
+        };
+        let fqn = Fqn::new(world_pkg.to_string(), naming::to_upper_camel(tdn));
+        let desc = format!("{wit_pkg}/{wname}.{tdn}");
+        if self
+            .register(td.span, fqn.clone(), kind, wit_pkg.to_string(), desc)
+            .is_ok()
+        {
+            self.type_fqns.insert(tid, fqn);
+        }
     }
 
     fn register(
@@ -209,26 +253,46 @@ impl<'a> Mapper<'a> {
                         self.type_fqns.insert(*tid, fqn);
                     }
                 }
+                // The interface declaration itself occupies a Java type in the
+                // same package as its member types. Real WASI repeats the
+                // interface name on a member (`interface error { resource
+                // error; }`), so per spec §4.3 the *declaration* mangles
+                // (`Error_`) — member types keep their WIT-derived names.
+                let iface_simple =
+                    self.mangle_interface_decl(base.clone(), naming::to_upper_camel(name));
+                self.iface_decl_names
+                    .insert(*iface_id, iface_simple.clone());
+                let iface_fqn = Fqn::new(base, iface_simple);
+                let _ = self.register(
+                    iface.span,
+                    iface_fqn,
+                    RegisteredKind::Interface,
+                    wit_pkg.clone(),
+                    format!("{wit_pkg}/{name}"),
+                );
             }
             for (wname, world_id) in &pkg.worlds {
                 let world = &resolve.worlds[*world_id];
-                let world_pkg =
-                    format!("{pkg_java}.{}", naming::to_lower_camel(world.name.as_str()));
+                let world_pkg = format!(
+                    "{pkg_java}.{}",
+                    naming::package_segment(world.name.as_str())
+                );
                 for item in world.imports.values().chain(world.exports.values()) {
-                    if let WorldItem::Type { id, .. } = item {
-                        let td = &resolve.types[*id];
-                        let Some(tdn) = &td.name else { continue };
-                        let Some(kind) = registered_kind(&td.kind) else {
-                            continue;
-                        };
-                        let fqn = Fqn::new(world_pkg.clone(), naming::to_upper_camel(tdn));
-                        let desc = format!("{wit_pkg}/{wname}.{tdn}");
-                        if self
-                            .register(td.span, fqn.clone(), kind, wit_pkg.clone(), desc)
-                            .is_ok()
-                        {
-                            self.type_fqns.insert(*id, fqn);
+                    match item {
+                        WorldItem::Type { id, .. } => {
+                            self.register_world_type(&world_pkg, &wit_pkg, wname, *id);
                         }
+                        // types declared in an inline world interface land in
+                        // the world package segment too (spec §7.2); named
+                        // interfaces were already registered with the package
+                        WorldItem::Interface { id, .. }
+                            if resolve.interfaces[*id].name.is_none() =>
+                        {
+                            for tid in resolve.interfaces[*id].types.values() {
+                                self.register_world_type(&world_pkg, &wit_pkg, wname, *tid);
+                            }
+                        }
+                        _ => {}
                     }
                 }
                 for role_pkg in self.role_packages(&world_pkg) {
@@ -299,39 +363,8 @@ impl<'a> Mapper<'a> {
         let pkg_java = self.java_pkg(pkg_id);
         let base = self.interface_base(pkg_java, name);
 
-        // Collect resource-owned functions before the mutable emission pass.
-        let mut resource_funcs: HashMap<TypeId, Vec<&Function>> = HashMap::new();
-        let mut freestanding: Vec<&Function> = Vec::new();
-        for f in iface.functions.values() {
-            match &f.kind {
-                FunctionKind::Method(tid)
-                | FunctionKind::Static(tid)
-                | FunctionKind::Constructor(tid) => {
-                    resource_funcs.entry(*tid).or_default().push(f);
-                }
-                _ => freestanding.push(f),
-            }
-        }
-
-        let mut decls: Vec<ir::Decl> = Vec::new();
-        for (_tname, tid) in &iface.types {
-            let td = &resolve.types[*tid];
-            let Some(tdn) = &td.name else { continue };
-            let result = match &td.kind {
-                TypeDefKind::Record(r) => self.emit_record(&base, tdn, td, r),
-                TypeDefKind::Variant(v) => self.emit_variant(&base, tdn, td, v),
-                TypeDefKind::Enum(e) => self.emit_enum(tdn, td, e),
-                TypeDefKind::Flags(fl) => self.emit_flags(&base, tdn, td, fl),
-                TypeDefKind::Resource => self.emit_resource(&base, tdn, td, *tid, &resource_funcs),
-                TypeDefKind::Type(_) => Ok(None), // alias: no new type (§5.10)
-                _ => Ok(None),
-            };
-            match result {
-                Ok(Some(d)) => decls.push(d),
-                Ok(None) => {}
-                Err(()) => {}
-            }
-        }
+        let (resource_funcs, freestanding) = split_functions(iface);
+        let decls = self.emit_type_decls(&base, &iface.types, &resource_funcs);
 
         let mut taken: Vec<String> = Vec::new();
         let mut iface_methods = Vec::new();
@@ -347,12 +380,17 @@ impl<'a> Mapper<'a> {
 
         let doc = render_doc(&iface.docs);
         let javadoc = if doc.is_empty() {
-            vec!["Nothing to see here.".to_string()]
+            vec!["WIT interface.".to_string()]
         } else {
-            doc
+            doc.clone()
         };
+        let simple = self
+            .iface_decl_names
+            .get(&iface_id)
+            .cloned()
+            .unwrap_or_else(|| naming::to_upper_camel(name));
         let iface_decl = ir::Decl::Interface {
-            name: naming::to_upper_camel(name),
+            name: simple.clone(),
             javadoc,
             extends: Vec::new(),
             is_sealed: false,
@@ -360,7 +398,6 @@ impl<'a> Mapper<'a> {
             methods: iface_methods,
             nested: Vec::new(),
         };
-        let simple = naming::to_upper_camel(name);
         for d in decls {
             let fname = d.name().to_string();
             self.files
@@ -371,7 +408,6 @@ impl<'a> Mapper<'a> {
         // (spec §6).
         self.files
             .push(ir::JavaFile::types_file(base.clone(), simple, iface_decl));
-        let doc = render_doc(&iface.docs);
         self.package_infos.entry(base.clone()).or_insert_with(|| {
             if doc.is_empty() {
                 vec!["WIT-generated package.".into()]
@@ -379,6 +415,35 @@ impl<'a> Mapper<'a> {
                 doc.clone()
             }
         });
+    }
+
+    /// Emits the named type definitions of one interface (named or inline)
+    /// as IR declarations.
+    fn emit_type_decls(
+        &mut self,
+        base: &str,
+        types: &indexmap::IndexMap<String, TypeId>,
+        resource_funcs: &HashMap<TypeId, Vec<&Function>>,
+    ) -> Vec<ir::Decl> {
+        let resolve = self.resolve;
+        let mut decls: Vec<ir::Decl> = Vec::new();
+        for (_tname, tid) in types {
+            let td = &resolve.types[*tid];
+            let Some(tdn) = &td.name else { continue };
+            let result = match &td.kind {
+                TypeDefKind::Record(r) => self.emit_record(base, tdn, td, r),
+                TypeDefKind::Variant(v) => self.emit_variant(base, tdn, td, v),
+                TypeDefKind::Enum(e) => self.emit_enum(tdn, td, e),
+                TypeDefKind::Flags(fl) => self.emit_flags(base, tdn, td, fl),
+                TypeDefKind::Resource => self.emit_resource(base, tdn, td, *tid, resource_funcs),
+                TypeDefKind::Type(_) => Ok(None), // alias: no new type (§5.10)
+                _ => Ok(None),
+            };
+            if let Ok(Some(d)) = result {
+                decls.push(d);
+            }
+        }
+        decls
     }
 
     fn type_javadoc(&mut self, td: &TypeDef, fallback: &str) -> Vec<String> {
@@ -410,10 +475,9 @@ impl<'a> Mapper<'a> {
             let ty = self.resolve_type(&field.ty)?;
             let mut text = render_doc(&field.docs).join(" ");
             self.append_type_notes(&field.ty, &mut text);
-            javadoc.push(format!(
-                "@param {jname} {}",
-                if text.is_empty() { jname.clone() } else { text }
-            ));
+            if !text.is_empty() {
+                javadoc.push(format!("@param {jname} {text}"));
+            }
             components.push(ir::Param {
                 name: jname,
                 ty,
@@ -449,15 +513,12 @@ impl<'a> Mapper<'a> {
                     let ty = self.resolve_type(t)?;
                     let mut text = String::new();
                     self.append_type_notes(t, &mut text);
-                    let text = if text.is_empty() {
-                        "value".to_string()
-                    } else {
-                        text
-                    };
                     if javadoc.is_empty() {
                         javadoc.push(format!("WIT case `{}`.", case.name));
                     }
-                    javadoc.push(format!("@param value {text}"));
+                    if !text.is_empty() {
+                        javadoc.push(format!("@param value {text}"));
+                    }
                     vec![ir::Param {
                         name: "value".into(),
                         ty,
@@ -525,16 +586,14 @@ impl<'a> Mapper<'a> {
         fl: &Flags,
     ) -> Result<Option<ir::Decl>, ()> {
         if fl.flags.len() > 64 {
-            self.fail::<()>(
+            return self.fail(
                 td.span,
                 Code::FlagsArityExceeded,
                 format!(
                     "flags `{name}` has {} members; v1 supports at most 64",
                     fl.flags.len()
                 ),
-            )
-            .ok();
-            return Err(());
+            );
         }
         let outer = naming::to_upper_camel(name);
         let self_ty = ir::TypeRef::Fqn(Fqn::new(base.to_string(), outer.clone()));
@@ -614,7 +673,10 @@ impl<'a> Mapper<'a> {
     ) -> Result<Option<ir::Decl>, ()> {
         let simple = naming::to_upper_camel(name);
         let self_fqn = Fqn::new(base.to_string(), simple.clone());
-        let mut taken: Vec<String> = Vec::new();
+        // `close` is pre-taken: the generated drop method owns the name, so a
+        // WIT-defined `close` member mangles to `close_` (spec §4.3) instead
+        // of emitting a duplicate declaration.
+        let mut taken: Vec<String> = vec!["close".to_string()];
         let mut methods = Vec::new();
         methods.push(ir::Method {
             name: "close".into(),
@@ -651,11 +713,9 @@ impl<'a> Mapper<'a> {
         if let Some(params) = factory_params {
             let mut create_javadoc = Vec::new();
             for p in &params {
-                create_javadoc.push(format!(
-                    "@param {} {}",
-                    p.name,
-                    p.doc.clone().unwrap_or_else(|| p.name.clone())
-                ));
+                if let Some(doc) = &p.doc {
+                    create_javadoc.push(format!("@param {} {doc}", p.name));
+                }
             }
             nested.push(ir::Decl::Interface {
                 name: "Factory".into(),
@@ -714,25 +774,21 @@ impl<'a> Mapper<'a> {
             Some(t) => self.resolve_type_in(t, false, Pos::Return)?,
             None => ir::TypeRef::Simple("void"),
         };
+        // Javadoc carries only real content: WIT docs, ownership notes and
+        // unsigned/char notes. Nothing is invented (spec §9: custom notes are
+        // prose sentences; undocumented params get no tag).
         let mut javadoc = render_doc(&f.docs);
-        if javadoc.is_empty() {
-            javadoc.push(format!("{}.", jname));
-        }
         for p in &params {
-            javadoc.push(format!(
-                "@param {} {}",
-                p.name,
-                p.doc.clone().unwrap_or_else(|| p.name.clone())
-            ));
-        }
-        let is_void = matches!(ret, ir::TypeRef::Simple("void"));
-        if !is_void {
-            javadoc.push(format!("@return {jname}"));
+            if let Some(doc) = &p.doc {
+                javadoc.push(format!("@param {} {doc}", p.name));
+            }
         }
         if let Some(t) = &f.result {
-            if self.type_has_owned(t) {
+            if self.type_is_directly_owned(t) {
                 javadoc.push(OWN_RETURN_NOTE.to_string());
-            } else if !is_void {
+            } else if self.type_has_owned(t) {
+                javadoc.push(NESTED_OWN_RETURN_NOTE.to_string());
+            } else {
                 let mut text = String::new();
                 self.append_type_notes(t, &mut text);
                 if !text.is_empty() {
@@ -791,7 +847,42 @@ impl<'a> Mapper<'a> {
         let resolve = self.resolve;
         let world: &World = &resolve.worlds[world_id];
         let pkg_java = self.java_pkg(pkg_id);
-        let world_pkg = format!("{pkg_java}.{}", naming::to_lower_camel(wname));
+        let world_pkg = format!("{pkg_java}.{}", naming::package_segment(wname));
+
+        // Inline world interfaces: their type definitions land in the world
+        // package segment, shared by both role packages (spec §7.2). Their
+        // functions fold into the aggregates below.
+        let mut has_world_types = false;
+        for item in world.imports.values().chain(world.exports.values()) {
+            let WorldItem::Interface { id, .. } = item else {
+                continue;
+            };
+            if resolve.interfaces[*id].name.is_some() {
+                continue;
+            }
+            let iface = &resolve.interfaces[*id];
+            let (resource_funcs, _freestanding) = split_functions(iface);
+            let decls = self.emit_type_decls(&world_pkg, &iface.types, &resource_funcs);
+            for d in decls {
+                has_world_types = true;
+                let fname = d.name().to_string();
+                self.files
+                    .push(ir::JavaFile::types_file(world_pkg.clone(), fname, d));
+            }
+        }
+        if has_world_types {
+            self.package_infos
+                .entry(world_pkg.clone())
+                .or_insert_with(|| {
+                    let d = render_doc(&world.docs);
+                    if d.is_empty() {
+                        vec!["WIT-generated package.".into()]
+                    } else {
+                        d
+                    }
+                });
+        }
+
         let role_pkgs = self.role_packages(&world_pkg);
         for role_pkg in role_pkgs {
             let is_host = role_pkg.ends_with(".host");
@@ -832,38 +923,56 @@ impl<'a> Mapper<'a> {
         items: &indexmap::IndexMap<WorldKey, WorldItem>,
         doc: &str,
     ) -> Result<ir::JavaFile, ()> {
+        let direction = if agg_name == "Exports" {
+            "exported"
+        } else {
+            "imported"
+        };
         let mut taken: Vec<String> = Vec::new();
         let mut methods = Vec::new();
-        for (key, item) in items {
-            match (key, item) {
-                (WorldKey::Name(_), WorldItem::Function(f)) => {
+        for (_key, item) in items {
+            match item {
+                WorldItem::Function(f) => {
                     methods.push(self.emit_function(f, &mut taken)?);
                 }
-                (WorldKey::Interface(iface_id), WorldItem::Interface { .. }) => {
+                WorldItem::Interface { id, .. } => {
                     let resolve = self.resolve;
-                    let iface = &resolve.interfaces[*iface_id];
-                    let Some(iname) = &iface.name else { continue };
-                    let jname = self.mangle(
-                        &naming::to_lower_camel(iname),
-                        naming::NameForm::LowerCamel,
-                        &|c| taken.iter().any(|t| t == c),
-                    )?;
-                    taken.push(jname.clone());
-                    let fqn = self.interface_fqn(*iface_id)?;
-                    methods.push(ir::Method {
-                        name: jname,
-                        javadoc: vec!["Access the imported interface.".into()],
-                        params: Vec::new(),
-                        ret: ir::TypeRef::Fqn(fqn),
-                        is_static: false,
-                        body: None,
-                        annotations: Vec::new(),
-                    });
+                    let iface = &resolve.interfaces[*id];
+                    match &iface.name {
+                        // Named interface: one accessor returning the
+                        // interface type (spec §7.2).
+                        Some(iname) => {
+                            let jname = self.mangle(
+                                &naming::to_lower_camel(iname),
+                                naming::NameForm::LowerCamel,
+                                &|c| taken.iter().any(|t| t == c),
+                            )?;
+                            taken.push(jname.clone());
+                            let fqn = self.interface_fqn(*id)?;
+                            methods.push(ir::Method {
+                                name: jname,
+                                javadoc: vec![format!("Access the {direction} interface.")],
+                                params: Vec::new(),
+                                ret: ir::TypeRef::Fqn(fqn),
+                                is_static: false,
+                                body: None,
+                                annotations: Vec::new(),
+                            });
+                        }
+                        // Inline world interface: its functions become
+                        // abstract methods on the aggregate directly
+                        // (spec §7.2); its types landed in the world package.
+                        None => {
+                            let (_rf, freestanding) = split_functions(iface);
+                            for f in freestanding {
+                                methods.push(self.emit_function(f, &mut taken)?);
+                            }
+                        }
+                    }
                 }
-                (WorldKey::Name(_), WorldItem::Type { .. }) => {
+                WorldItem::Type { .. } => {
                     // world-local types land in the world package (§7.2)
                 }
-                _ => {}
             }
         }
         let decl = ir::Decl::Interface {
@@ -892,10 +1001,13 @@ impl<'a> Mapper<'a> {
             return Err(());
         };
         let pkg_java = self.java_pkg(pkg_id);
-        Ok(Fqn::new(
-            self.interface_base(pkg_java, name),
-            naming::to_upper_camel(name),
-        ))
+        let base = self.interface_base(pkg_java, name);
+        // use the registered (possibly mangled) declaration name
+        let simple = match self.iface_decl_names.get(&iface_id) {
+            Some(s) => s.clone(),
+            None => naming::to_upper_camel(name),
+        };
+        Ok(Fqn::new(base, simple))
     }
 
     // ------------------------------------------------------------ type map
@@ -1070,7 +1182,12 @@ impl<'a> Mapper<'a> {
     // --------------------------------------------------- type introspection
 
     fn append_type_notes(&self, ty: &Type, text: &mut String) {
-        if self.type_walk(ty, &mut |t| matches!(t, Type::U64)) {
+        // the u64 note describes the `long` representation; with
+        // --u64=BigInteger the type maps to BigInteger and carries no note
+        // (spec §5.1)
+        if matches!(self.opts.u64_style, U64Style::Long)
+            && self.type_walk(ty, &mut |t| matches!(t, Type::U64))
+        {
             if !text.is_empty() {
                 text.push(' ');
             }
@@ -1086,6 +1203,21 @@ impl<'a> Mapper<'a> {
 
     fn type_is_borrow(&self, ty: &Type) -> bool {
         matches!(ty, Type::Id(tid) if matches!(&self.resolve.types[*tid].kind, TypeDefKind::Handle(Handle::Borrow(_))))
+    }
+
+    /// True when the type itself is an owned handle (a bare resource, the
+    /// shorthand for `own<T>`, or `own<T>`, possibly through an alias chain)
+    /// — spec §5.11's direct vs nested ownership notes.
+    fn type_is_directly_owned(&self, ty: &Type) -> bool {
+        let Type::Id(mut tid) = ty else { return false };
+        loop {
+            match &self.resolve.types[tid].kind {
+                TypeDefKind::Handle(Handle::Own(_)) | TypeDefKind::Resource => return true,
+                // an alias to `own<T>` / `borrow<T>` / a resource stays direct
+                TypeDefKind::Type(Type::Id(next)) => tid = *next,
+                _ => return false,
+            }
+        }
     }
 
     fn type_has_owned(&self, ty: &Type) -> bool {
@@ -1145,6 +1277,26 @@ impl<'a> Mapper<'a> {
     }
 }
 
+/// Partitions an interface's functions into resource-owned (methods,
+/// constructors, statics) and freestanding, in WIT order.
+fn split_functions(
+    iface: &wit_parser::Interface,
+) -> (HashMap<TypeId, Vec<&Function>>, Vec<&Function>) {
+    let mut resource_funcs: HashMap<TypeId, Vec<&Function>> = HashMap::new();
+    let mut freestanding: Vec<&Function> = Vec::new();
+    for f in iface.functions.values() {
+        match &f.kind {
+            FunctionKind::Method(tid)
+            | FunctionKind::Static(tid)
+            | FunctionKind::Constructor(tid) => {
+                resource_funcs.entry(*tid).or_default().push(f);
+            }
+            _ => freestanding.push(f),
+        }
+    }
+    (resource_funcs, freestanding)
+}
+
 /// wit-parser encodes resource methods as `[method]widget.label`,
 /// `[static]widget.duplicate`, `[constructor]widget` — take the leaf name.
 fn leaf_name(name: &str) -> &str {
@@ -1200,10 +1352,36 @@ fn escape_doc_line(l: &str) -> String {
     let l = l
         .replace('&', "&amp;")
         .replace('<', "&lt;")
-        .replace('>', "&gt;");
+        .replace('>', "&gt;")
+        // `*/` would terminate the Javadoc comment early
+        .replace("*/", "*&#47;");
     if let Some(rest) = l.strip_prefix('@') {
         format!("&#64;{rest}")
     } else {
         l
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn doc_escaping() {
+        // spec §9: `<`, `>`, `&`, and a line-leading `@`; `*/` would
+        // terminate the comment early
+        assert_eq!(escape_doc_line("a < b > c & d"), "a &lt; b &gt; c &amp; d");
+        assert_eq!(escape_doc_line("@param injected"), "&#64;param injected");
+        assert_eq!(escape_doc_line("x@y"), "x@y");
+        assert_eq!(escape_doc_line("a*/b"), "a*&#47;b");
+        // `&` is escaped before the character references are introduced
+        assert_eq!(escape_doc_line("&lt;"), "&amp;lt;");
+    }
+
+    #[test]
+    fn ownership_notes_direct_vs_nested() {
+        // direct own return vs owned handle nested in a composite carry
+        // different spec §5.11 notes
+        assert_ne!(OWN_RETURN_NOTE, NESTED_OWN_RETURN_NOTE);
     }
 }

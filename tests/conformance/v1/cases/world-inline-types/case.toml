@@ -1,0 +1,3 @@
+name = "world-inline-types"
+description = "types declared in an inline world interface land in the world package segment; inline functions fold into the aggregates"
+options = ["--no-support"]

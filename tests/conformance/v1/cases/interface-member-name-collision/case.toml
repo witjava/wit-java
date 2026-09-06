@@ -1,0 +1,3 @@
+name = "interface-member-name-collision"
+description = "an interface whose name is repeated by a member type (interface error { resource error; }): the declaration mangles to Error_, the member keeps Error"
+options = ["--no-support"]

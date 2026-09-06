@@ -9,11 +9,7 @@ public interface Widget extends AutoCloseable {
     @Override
     void close();
 
-    /**
-     * The label.
-     *
-     * @return label
-     */
+    /** The label. */
     String label();
 
     /** Repaint it. */
@@ -23,7 +19,6 @@ public interface Widget extends AutoCloseable {
      * Trade for a fresh one.
      *
      * @param other Borrowed handle: ownership is not transferred by this call.
-     * @return swap
      * Owned handle: the caller is responsible for closing (dropping) it.
      */
     Widget swap(Widget other);
@@ -31,10 +26,6 @@ public interface Widget extends AutoCloseable {
     /** Factory for {@link Widget}. */
     public interface Factory {
 
-        /**
-         *
-         * @param label label
-         */
         Widget create(String label);
     }
 
@@ -45,7 +36,6 @@ public interface Widget extends AutoCloseable {
          * Two from one.
          *
          * @param w Borrowed handle: ownership is not transferred by this call.
-         * @return duplicate
          * Owned handle: the caller is responsible for closing (dropping) it.
          */
         Widget duplicate(Widget w);

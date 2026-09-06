@@ -5,37 +5,16 @@ package demo.res.v0_1.types;
 import io.github.witjava.support.Result;
 import io.github.witjava.support.Unit;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Types {
 
-    /**
-     * parse.
-     *
-     * @return parse
-     */
     Result<Long, String> parse();
 
-    /**
-     * load.
-     *
-     * @return load
-     */
     Result<String, Unit> load();
 
-    /**
-     * failOnly.
-     *
-     * @return failOnly
-     */
     Result<Unit, String> failOnly();
 
-    /** nothing. */
     void nothing();
 
-    /**
-     * attempt.
-     *
-     * @return attempt
-     */
     Result<Unit, Unit> attempt();
 }

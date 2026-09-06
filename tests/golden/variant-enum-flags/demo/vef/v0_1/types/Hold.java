@@ -2,12 +2,6 @@
 
 package demo.vef.v0_1.types;
 
-/**
- * WIT-generated record.
- *
- * @param s s
- * @param c c
- * @param p p
- */
+/** WIT-generated record. */
 public record Hold(Shape s, Color c, Perms p) {
 }

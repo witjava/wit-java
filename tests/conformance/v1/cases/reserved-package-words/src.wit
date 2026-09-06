@@ -1,0 +1,12 @@
+package demo:class@1.0.0;
+
+interface inner {
+  record box {
+    a: u32,
+  }
+}
+
+world default {
+  use inner.{box};
+  export go: func(x: box);
+}

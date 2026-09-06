@@ -70,15 +70,16 @@ pub fn generate(
     opts: &config::GenerateOptions,
 ) -> Result<Vec<GeneratedFile>, GenError> {
     opts.validate()
-        .map_err(|d| GenError::Input(anyhow::anyhow!("{d}")))?;
+        .map_err(|e| GenError::Input(anyhow::anyhow!("{e}")))?;
     let (resolve, _pkg_ids) =
         wit::load(wit_path, &opts.features, opts.all_features).map_err(GenError::Input)?;
     let project = map::generate(&resolve, opts).map_err(GenError::Diagnostics)?;
-    let mut files: Vec<GeneratedFile> =
-        render::render(&project, TOOL_VERSION, &opts.support_package)
-            .into_iter()
-            .map(|(path, content)| GeneratedFile { path, content })
-            .collect();
+    let rendered = render::render(&project, TOOL_VERSION, &opts.support_package)
+        .map_err(|e| GenError::Internal(anyhow::anyhow!("{e}")))?;
+    let mut files: Vec<GeneratedFile> = rendered
+        .into_iter()
+        .map(|(path, content)| GeneratedFile { path, content })
+        .collect();
     if !opts.no_support {
         for (path, content) in support::sources(&opts.support_package) {
             files.push(GeneratedFile { path, content });

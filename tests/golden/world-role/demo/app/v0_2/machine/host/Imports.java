@@ -10,10 +10,5 @@ public interface Imports {
     /** Access the imported interface. */
     Logging logging();
 
-    /**
-     * ping.
-     *
-     * @return ping
-     */
     int ping();
 }

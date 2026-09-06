@@ -2,13 +2,9 @@
 
 package demo.app.v0_2.logging;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Logging {
 
-    /**
-     * Write a line.
-     *
-     * @param msg msg
-     */
+    /** Write a line. */
     void log(String msg);
 }

@@ -75,9 +75,10 @@ fn wasi_corpus_compiles_and_documents_clean() {
         String::from_utf8_lossy(&out.stderr)
     );
 
-    // javadoc -Xdoclint:all,-missing with zero warnings
+    // javadoc -Xdoclint:all,-missing, zero warnings (R5: -Werror promotes any
+    // doclint warning to a failure)
     let out = Command::new(&javadoc)
-        .args(["-quiet", "-Xdoclint:all,-missing"])
+        .args(["-quiet", "-Xdoclint:all,-missing", "-Werror"])
         .arg("-d")
         .arg(temp_dir("corpus-docs"))
         .args(&java_files)

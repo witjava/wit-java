@@ -291,6 +291,8 @@ method 同名（不同命名空间），分离后天然不冲突。
 **开放问题（M2 gate 要回答）**：resource 映射成 `interface` 时，host adapter
 没有地方挂 native handle。可能需要改成 `abstract class`，或在 interface 上加一个
 `long handle()` accessor。**这一点在 M2 spike 之前不冻结。**
+**（2026-09-06 已回答：M2 spike 通过 —— handle table 完全落在 adapter 侧，
+纯 interface 方案未被证伪，见 `wit-java-mapping/spike/` 的验证记录。）**
 
 ### 5.7 Async 类型：v1 明确不支持
 

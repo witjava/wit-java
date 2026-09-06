@@ -5,6 +5,5 @@ package demo.app.v0_2.machine.host;
 /** World exports. Called by the host; implemented by the component. */
 public interface Exports {
 
-    /** start. */
     void start();
 }

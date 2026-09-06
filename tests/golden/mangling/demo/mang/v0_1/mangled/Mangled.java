@@ -2,16 +2,10 @@
 
 package demo.mang.v0_1.mangled;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Mangled {
 
-    /** class_. */
     void class_();
 
-    /**
-     * wait_.
-     *
-     * @return wait_
-     */
     int wait_();
 }

@@ -2,12 +2,6 @@
 
 package demo.mang.v0_1.mangled;
 
-/**
- * WIT-generated record.
- *
- * @param toString_ toString_
- * @param hashCode_ hashCode_
- * @param equals_ equals_
- */
+/** WIT-generated record. */
 public record Pair(String toString_, long hashCode_, boolean equals_) {
 }

@@ -1,0 +1,19 @@
+package demo:inline@1.0.0;
+
+world broker {
+  import events: interface {
+    /// Payload attached to every event.
+    record payload {
+      /// Event name.
+      name: string,
+      seq: u64,
+    }
+    /// An enumeration of severities.
+    enum severity {
+      low,
+      high,
+    }
+    on-event: func(sev: severity, p: payload) -> severity;
+  }
+  export log: func(msg: string);
+}

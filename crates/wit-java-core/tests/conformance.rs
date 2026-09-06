@@ -26,12 +26,6 @@ fn conformance_positive_cases_match_tier1_digest() {
         };
         let out = temp_dir(&format!("conf-{name}"));
         write(&files, &out);
-        eprintln!(
-            "CMD java {} --compare {} {}",
-            checker_path().display(),
-            case_dir.join("expected").display(),
-            out.display()
-        );
         let output = Command::new(&java)
             .arg(checker_path())
             .arg("--compare")

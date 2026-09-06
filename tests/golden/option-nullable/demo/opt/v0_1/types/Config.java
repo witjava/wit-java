@@ -2,11 +2,6 @@
 
 package demo.opt.v0_1.types;
 
-/**
- * WIT-generated record.
- *
- * @param name name
- * @param retries retries
- */
+/** WIT-generated record. */
 public record Config(@Nullable String name, @Nullable Long retries) {
 }

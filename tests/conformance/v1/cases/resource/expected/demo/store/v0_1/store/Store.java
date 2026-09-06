@@ -2,6 +2,6 @@
 
 package demo.store.v0_1.store;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Store {
 }

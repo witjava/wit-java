@@ -1,0 +1,8 @@
+package demo:err@1.0.0;
+
+interface error {
+  resource error {
+    code: func() -> u32;
+  }
+  describe: func(e: borrow<error>) -> string;
+}

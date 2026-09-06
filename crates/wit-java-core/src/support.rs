@@ -3,8 +3,6 @@
 //! is the ONLY templated part; with the default FQN the output is
 //! byte-identical to the spec repository's conformance data.
 
-pub const DEFAULT_PACKAGE: &str = "io.github.witjava.support";
-
 /// (file name, contents with `{{PACKAGE}}` placeholder)
 pub const FILES: &[(&str, &str)] = &[
     (

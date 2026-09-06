@@ -32,7 +32,8 @@ pub fn load(
 }
 
 /// All packages currently in the resolve, deterministically ordered
-/// (spec §12: never arena/insertion order).
+/// (spec §12: never arena/insertion order). Versions compare by semver
+/// precedence, not string order.
 pub fn sorted_packages(resolve: &Resolve) -> Vec<wit_parser::PackageId> {
     let mut pkgs: Vec<_> = resolve.packages.iter().collect();
     pkgs.sort_by(|a, b| {
@@ -40,12 +41,7 @@ pub fn sorted_packages(resolve: &Resolve) -> Vec<wit_parser::PackageId> {
         an.namespace
             .cmp(&bn.namespace)
             .then_with(|| an.name.cmp(&bn.name))
-            .then_with(|| {
-                an.version
-                    .as_ref()
-                    .map(|v| v.to_string())
-                    .cmp(&b.1.name.version.as_ref().map(|v| v.to_string()))
-            })
+            .then_with(|| an.version.cmp(&bn.version))
     });
     pkgs.into_iter().map(|(id, _)| id).collect()
 }

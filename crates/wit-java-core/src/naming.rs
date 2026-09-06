@@ -81,6 +81,17 @@ fn is_reserved(lower: &str) -> bool {
     RESERVED_KEYWORDS.contains(&lower) || OBJECT_METHOD_GROUP.contains(&lower)
 }
 
+/// lowerCamel of a kebab label, keyword-mangled, for use as a Java package
+/// segment (spec §3.1: a reserved result is mangled, `class` → `class_`).
+pub fn package_segment(kebab: &str) -> String {
+    let seg = to_lower_camel(kebab);
+    if is_reserved(&seg) {
+        format!("{seg}_")
+    } else {
+        seg
+    }
+}
+
 fn capitalize(word: &str) -> String {
     let mut cs = word.chars();
     match cs.next() {
@@ -216,7 +227,9 @@ impl std::fmt::Display for Fqn {
 }
 
 /// Java package for a WIT package with `--package-map` precedence
-/// (spec §3.1–§3.4).
+/// (spec §3.1–§3.4). Override keys are matched most-specific first: exact
+/// version `ns:pkg@x.y.z`, then major.minor `ns:pkg@x.y` (the spec's
+/// examples use the short form), then unversioned `ns:pkg`.
 pub fn java_package(
     namespace: &str,
     name: &str,
@@ -224,21 +237,26 @@ pub fn java_package(
     package_root: Option<&str>,
     package_map: &std::collections::BTreeMap<String, String>,
 ) -> String {
-    let versioned_key = match version {
-        Some(v) => format!("{namespace}:{name}@{v}"),
-        None => format!("{namespace}:{name}"),
-    };
     let unversioned_key = format!("{namespace}:{name}");
+    let versioned_keys: Vec<String> = match version {
+        Some(v) => vec![
+            format!("{namespace}:{name}@{v}"),
+            format!("{namespace}:{name}@{}.{}", v.major, v.minor),
+        ],
+        None => Vec::new(),
+    };
 
-    if let Some(mapped) = package_map
-        .get(&versioned_key)
-        .or_else(|| package_map.get(&unversioned_key))
+    for key in versioned_keys
+        .iter()
+        .chain(std::iter::once(&unversioned_key))
     {
-        return mapped.clone();
+        if let Some(mapped) = package_map.get(key) {
+            return mapped.clone();
+        }
     }
 
-    let ns = to_lower_camel(namespace);
-    let pkg = to_lower_camel(name);
+    let ns = package_segment(namespace);
+    let pkg = package_segment(name);
     let mut parts: Vec<String> = Vec::new();
     if let Some(root) = package_root {
         parts.push(root.to_string());
@@ -296,7 +314,9 @@ mod tests {
             mangle("toString", NameForm::LowerCamel, &none).unwrap(),
             "toString_"
         );
-        // group 2 is mangled in every position for rule simplicity
+        // group-2 names can only surface in lowerCamel positions; the
+        // UpperCamel form of the same kebab label never equals an Object
+        // method name, so it needs no mangling
         assert_eq!(
             mangle("ToString", NameForm::UpperCamel, &none).unwrap(),
             "ToString"
@@ -313,6 +333,42 @@ mod tests {
         assert_eq!(
             mangle("class", NameForm::LowerCamel, &taken).unwrap(),
             "class___"
+        );
+    }
+
+    #[test]
+    fn package_segments_are_keyword_mangled() {
+        assert_eq!(package_segment("incoming-handler"), "incomingHandler");
+        assert_eq!(package_segment("class"), "class_");
+        assert_eq!(package_segment("default"), "default_");
+        assert_eq!(package_segment("wait"), "wait_");
+        assert_eq!(package_segment("types"), "types");
+    }
+
+    #[test]
+    fn package_map_partial_version_matches() {
+        let mut map = BTreeMap::new();
+        map.insert("wasi:io@0.2".to_string(), "org.example.io.v2".to_string());
+        let v = Version::parse("0.2.8").unwrap();
+        // the spec's short-form key `ns:pkg@x.y` matches x.y.z
+        assert_eq!(
+            java_package("wasi", "io", Some(&v), None, &map),
+            "org.example.io.v2"
+        );
+        // ...but not a different minor
+        let v2 = Version::parse("0.3.0").unwrap();
+        assert_eq!(
+            java_package("wasi", "io", Some(&v2), None, &map),
+            "wasi.io.v0_3"
+        );
+        // exact version still beats major.minor
+        map.insert(
+            "wasi:io@0.2.8".to_string(),
+            "org.example.io.exact".to_string(),
+        );
+        assert_eq!(
+            java_package("wasi", "io", Some(&v), None, &map),
+            "org.example.io.exact"
         );
     }
 

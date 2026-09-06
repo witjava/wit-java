@@ -1,6 +1,10 @@
 //! Generator options (spec §2, §11) and their validation.
+//!
+//! Validation failures here are usage errors (exit 1, plain message), not
+//! mapping diagnostics: the frozen `WJnnnn` codes are reserved for the
+//! conditions in the spec's error-code registry.
 
-use crate::diagnostic::Diagnostic;
+use crate::naming::RESERVED_KEYWORDS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InterfaceStyle {
@@ -82,47 +86,40 @@ fn valid_java_package(pkg: &str) -> bool {
     }
     pkg.split('.').all(|seg| {
         let mut cs = seg.chars();
-        matches!(cs.next(), Some(c) if c.is_ascii_alphabetic() || c == '_')
-            && cs.all(|c| c.is_ascii_alphanumeric() || c == '_')
+        let identifier = matches!(cs.next(), Some(c) if c.is_ascii_alphabetic() || c == '_')
+            && cs.all(|c| c.is_ascii_alphanumeric() || c == '_');
+        identifier && !RESERVED_KEYWORDS.contains(&seg)
     })
 }
 
 impl GenerateOptions {
     /// Validates everything that must fail before any mapping happens
-    /// (spec §3.4, §11).
-    pub fn validate(&self) -> Result<(), Diagnostic> {
+    /// (spec §3.4, §11). Errors are usage errors, not mapping diagnostics.
+    pub fn validate(&self) -> Result<(), String> {
         if self.mapping_version != crate::MAPPING_VERSION {
-            return Err(Diagnostic::new(
-                crate::diagnostic::Code::UnsupportedTypeConstruct,
-                format!(
-                    "unsupported mapping version `{}` (this tool implements `{}`)",
-                    self.mapping_version,
-                    crate::MAPPING_VERSION
-                ),
+            return Err(format!(
+                "unsupported mapping version `{}` (this tool implements `{}`)",
+                self.mapping_version,
+                crate::MAPPING_VERSION
             ));
         }
         if let Some(root) = &self.package_root {
             if !valid_java_package(root) {
-                return Err(Diagnostic::new(
-                    crate::diagnostic::Code::PackageCollision,
-                    format!("`--package-root` is not a valid Java package name: `{root}`"),
+                return Err(format!(
+                    "`--package-root` is not a valid Java package name: `{root}`"
                 ));
             }
         }
         if !valid_java_package(&self.support_package) {
-            return Err(Diagnostic::new(
-                crate::diagnostic::Code::PackageCollision,
-                format!(
-                    "`--support-package` is not a valid Java package name: `{}`",
-                    self.support_package
-                ),
+            return Err(format!(
+                "`--support-package` is not a valid Java package name: `{}`",
+                self.support_package
             ));
         }
         for (k, v) in &self.package_map {
             if !valid_java_package(v) {
-                return Err(Diagnostic::new(
-                    crate::diagnostic::Code::PackageCollision,
-                    format!("package-map value for `{k}` is not a valid Java package: `{v}`"),
+                return Err(format!(
+                    "package-map value for `{k}` is not a valid Java package: `{v}`"
                 ));
             }
         }
@@ -133,27 +130,17 @@ impl GenerateOptions {
 /// Parses `--package-map` TOML (spec §3.4).
 pub fn parse_package_map(
     toml_src: &str,
-) -> Result<std::collections::BTreeMap<String, String>, Diagnostic> {
-    let value: toml::Value = toml::from_str(toml_src).map_err(|e| {
-        Diagnostic::new(
-            crate::diagnostic::Code::PackageCollision,
-            format!("invalid package-map TOML: {e}"),
-        )
-    })?;
+) -> Result<std::collections::BTreeMap<String, String>, String> {
+    let value: toml::Value =
+        toml::from_str(toml_src).map_err(|e| format!("invalid package-map TOML: {e}"))?;
     let mut out = std::collections::BTreeMap::new();
-    let table = value.as_table().ok_or_else(|| {
-        Diagnostic::new(
-            crate::diagnostic::Code::PackageCollision,
-            "package-map must be a table",
-        )
-    })?;
+    let table = value
+        .as_table()
+        .ok_or_else(|| "package-map must be a table".to_string())?;
     for (k, v) in table {
-        let s = v.as_str().ok_or_else(|| {
-            Diagnostic::new(
-                crate::diagnostic::Code::PackageCollision,
-                format!("package-map value for `{k}` must be a string"),
-            )
-        })?;
+        let s = v
+            .as_str()
+            .ok_or_else(|| format!("package-map value for `{k}` must be a string"))?;
         out.insert(k.clone(), s.to_string());
     }
     Ok(out)

@@ -4,14 +4,8 @@ package demo.sp.v0_1.types;
 
 import io.github.witjava.support.Result;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Types {
 
-    /**
-     * flip.
-     *
-     * @param coin coin
-     * @return flip
-     */
     Result<String, String> flip(boolean coin);
 }

@@ -29,7 +29,8 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
-      # forward-looking doclint on the newest JDK; not a gate
+      # forward-looking doclint on the newest JDK; not a gate (failures stay
+      # visible as a skipped-status step instead of being silently swallowed)
       - uses: actions/setup-java@v4
         if: matrix.os == 'ubuntu-latest'
         with:
@@ -37,4 +38,5 @@ jobs:
           java-version: "25"
       - name: latest-JDK smoke (non-gating)
         if: matrix.os == 'ubuntu-latest'
-        run: cargo test -q -p wit-java-core --test corpus || echo "latest-JDK drift (non-gating)"
+        continue-on-error: true
+        run: cargo test -q -p wit-java-core --test corpus

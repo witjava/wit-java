@@ -2,10 +2,6 @@
 
 package demo.dep.v0_1.api;
 
-/**
- * Something useful.
- *
- * @param value value
- */
+/** Something useful. */
 public record Payload(long value) {
 }

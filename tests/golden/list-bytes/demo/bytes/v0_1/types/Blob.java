@@ -2,10 +2,6 @@
 
 package demo.bytes.v0_1.types;
 
-/**
- * A byte blob.
- *
- * @param data data
- */
+/** A byte blob. */
 public record Blob(byte[] data) {
 }

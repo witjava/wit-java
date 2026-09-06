@@ -26,8 +26,7 @@ pub fn checker_path() -> PathBuf {
 }
 
 /// Path to a `java` executable for the Tier-1 checker (any JDK ≥ 11;
-/// single-file source launcher). Callers MUST build a fresh `Command` per
-/// invocation (`Command` accumulates args across `.arg()` calls).
+/// single-file source launcher).
 pub fn java_path() -> Option<PathBuf> {
     if let Some(home) = std::env::var_os("WIT_JAVA_HOME") {
         let c = PathBuf::from(&home).join("bin/java");

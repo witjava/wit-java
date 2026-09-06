@@ -2,6 +2,6 @@
 
 package demo.dep.v0_1.api;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Api {
 }

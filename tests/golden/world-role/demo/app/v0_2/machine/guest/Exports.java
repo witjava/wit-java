@@ -5,6 +5,5 @@ package demo.app.v0_2.machine.guest;
 /** World exports. Implemented by the guest; called by the host. */
 public interface Exports {
 
-    /** start. */
     void start();
 }

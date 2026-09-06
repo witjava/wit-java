@@ -2,6 +2,6 @@
 
 package demo.vef.v0_1.types;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Types {
 }

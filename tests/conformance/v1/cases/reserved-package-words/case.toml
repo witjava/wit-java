@@ -1,0 +1,3 @@
+name = "reserved-package-words"
+description = "Java keywords as WIT package and world names are mangled in package segments (class -> class_, default -> default_)"
+options = ["--no-support"]

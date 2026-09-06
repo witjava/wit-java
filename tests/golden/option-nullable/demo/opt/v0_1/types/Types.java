@@ -2,15 +2,9 @@
 
 package demo.opt.v0_1.types;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Types {
 
-    /**
-     * probe.
-     *
-     * @param depth depth
-     * @return probe
-     * Unsigned 64-bit integer, range 0..2^64-1, stored as a Java {@code long}, which is signed. Use {@link java.lang.Long#compareUnsigned}, {@link java.lang.Long#divideUnsigned} and {@link java.lang.Long#toUnsignedString} for unsigned operations.
-     */
+    /** Unsigned 64-bit integer, range 0..2^64-1, stored as a Java {@code long}, which is signed. Use {@link java.lang.Long#compareUnsigned}, {@link java.lang.Long#divideUnsigned} and {@link java.lang.Long#toUnsignedString} for unsigned operations. */
     java.util.Optional<Long> probe(@Nullable Integer depth);
 }

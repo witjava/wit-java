@@ -4,15 +4,11 @@ package demo.main.v0_1.consumer;
 
 import demo.dep.v0_1.api.Payload;
 
-/** Nothing to see here. */
+/** WIT interface. */
 public interface Consumer {
 
     /**
-     * wrap.
-     *
-     * @param p p
      * @param k Unsigned 64-bit integer, range 0..2^64-1, stored as a Java {@code long}, which is signed. Use {@link java.lang.Long#compareUnsigned}, {@link java.lang.Long#divideUnsigned} and {@link java.lang.Long#toUnsignedString} for unsigned operations.
-     * @return wrap
      */
     Payload wrap(Payload p, long k);
 }
