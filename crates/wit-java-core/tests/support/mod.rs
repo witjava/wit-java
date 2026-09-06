@@ -106,6 +106,7 @@ pub fn options_from(case_dir: &Path, options: &[String]) -> GenerateOptions {
     for o in options {
         match o.as_str() {
             "--no-support" => opts.no_support = true,
+            "--all-features" => opts.all_features = true,
             "--option-style=optional" => opts.option_style = OptionStyle::Optional,
             "--option-style=nullable" => opts.option_style = OptionStyle::Nullable,
             "--u64=long" => opts.u64_style = U64Style::Long,
@@ -122,6 +123,8 @@ pub fn options_from(case_dir: &Path, options: &[String]) -> GenerateOptions {
                         .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
                     opts.package_map =
                         wit_java_core::config::parse_package_map(&src).expect("package map");
+                } else if let Some(feature) = other.strip_prefix("--features=") {
+                    opts.features.push(feature.to_string());
                 } else {
                     panic!("test harness does not understand option `{other}`");
                 }

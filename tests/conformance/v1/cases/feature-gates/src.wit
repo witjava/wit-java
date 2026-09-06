@@ -1,0 +1,17 @@
+package demo:feat@0.1.0;
+
+interface types {
+    record stable {
+        x: u32,
+    }
+    @unstable(feature = extra)
+    record bonus {
+        y: u32,
+    }
+    @unstable(feature = extra)
+    take: func(b: bonus) -> u32;
+}
+
+world app {
+    import types;
+}

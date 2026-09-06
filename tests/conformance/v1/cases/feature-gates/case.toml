@@ -1,0 +1,3 @@
+name = "feature-gates"
+description = "--features <name> enables @unstable(feature) items: the gated record and function are generated (spec section 2)"
+options = ["--no-support", "--features=extra"]

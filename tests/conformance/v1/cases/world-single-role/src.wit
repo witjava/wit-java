@@ -1,0 +1,10 @@
+package demo:single@0.1.0;
+
+interface clock {
+    now: func() -> u64;
+}
+
+world machine {
+    import clock;
+    import get-time: func() -> u64;
+}

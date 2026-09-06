@@ -1,0 +1,3 @@
+name = "world-single-role"
+description = "--role guest generates only the guest aggregates; the role segment is still present (spec section 7.1), inline world functions included"
+options = ["--no-support", "--role=guest"]

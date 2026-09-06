@@ -55,9 +55,11 @@
   `--u64` accepts the spec spelling `BigInteger` (plus `big-integer`).
 - Corpus: `wasi-cli-0.3-rc` renamed to `wasi-cli-0.2.7` — the vendored tree
   is byte-identical to the upstream `v0.2.7` tag, not a 0.3 preview.
-- Conformance suite grown to 15 positive + 7 negative cases: cases pin
+- Conformance suite grown to 18 positive + 7 negative cases: cases pin
   inline world interfaces, interface/member name collisions, reserved-word
-  package segments and empty interfaces. Golden trees re-blessed.
+  package segments, empty interfaces, feature gates (`--features` enabled /
+  default-skipped) and single-role generation (`--role guest` keeps the role
+  segment). Golden trees re-blessed.
 - javadoc verification now runs with `-Werror` so any doclint warning fails
   the build.
 

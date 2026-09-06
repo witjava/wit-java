@@ -21,11 +21,15 @@
 >   `@Nullable` 缺 import（javac 直接 cannot find symbol；新增 nullable +
 >   BigInteger 风格的 corpus 编译回归测试）；修复空 interface（无类型无函数，
 >   或全部被 feature gate 过滤）被静默丢弃而 world accessor 仍引用它
->   （spec §2/§6 本就要求恒发；新增 `empty-interface` conformance case，
->   现 22 case：15 正 + 7 负）；interface FQN 内部不变量失败改为报诊断
->   而非静默跳过 world 聚合；源码注释中误标为 "spec §" 的 DESIGN 节号
->   已更正；DESIGN §11.3 补 Q1 决议注（support FQN 定为
->   `io.github.witjava.support`）。
+>   （spec §2/§6 本就要求恒发；新增 `empty-interface` conformance case）；
+>   interface FQN 内部不变量失败改为报诊断而非静默跳过 world 聚合；
+>   补齐 spec §2/§7.1 的 conformance 盲区：`feature-gates` /
+>   `feature-gates-default`（--features 启用 vs 默认静默跳过）、
+>   `world-single-role`（--role guest 单 role 生成且 role 段恒在），
+>   现 25 case：18 正 + 7 负；WJ0005 在 error-codes.md 注明系防御性
+>   backstop（合法 WIT 无法触发，无负例）；spec §5.6 措辞修正；
+>   源码注释中误标为 "spec §" 的 DESIGN 节号已更正；DESIGN §11.3 补
+>   Q1 决议注（support FQN 定为 `io.github.witjava.support`）。
 > - 剩余发布动作：crates.io `0.0.0` 占位 → Sonatype `io.github.witjava` 验证
 >   （发 1.0 前 repo 需转 public）→ mapping 仓打 `mapping/v1` tag → wit-java 发 1.0
 > - 实现期写回 spec 的规则：泛型装箱（§5.1.1）、interface 声明恒发（§6）、

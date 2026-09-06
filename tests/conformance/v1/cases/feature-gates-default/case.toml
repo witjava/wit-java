@@ -1,0 +1,3 @@
+name = "feature-gates-default"
+description = "with no features enabled, @unstable(feature) items are skipped silently — not a diagnostic (spec section 2)"
+options = ["--no-support"]
